@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Files — WhatsApp-like Chat (Firebase)</title>
+    <style>
+        /* --- Basic reset --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial
+        }
+
+        html,
+        body,
+        #app {
+            height: 100%
+        }
+
+        body {
+            background: #e9edef
+        }
+
+        /* --- Layout --- */
+        .app {
+            display: flex;
+            height: 100vh;
+            max-height: 100vh;
+            overflow: hidden
+        }
+
+        .sidebar {
+            width: 320px;
+            background: #fff;
+            border-right: 1px solid #e6e6e6;
+            display: flex;
+            flex-direction: column
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column
+        }
+
+        /* --- Sidebar header --- */
+        .sidebar .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px;
+            border-bottom: 1px solid #f0f0f0
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .brand .logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #25D366;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700
+        }
+
+        .brand h2 {
+            font-size: 16px
+        }
+
+        .search {
+            padding: 10px
+        }
+
+        .search input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 20px;
+            border: 1px solid #e6e6e6
+        }
+
+        /* --- Chats list --- */
+        .chats {
+            overflow: auto;
+            flex: 1
+        }
+
+        .chat-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 14px;
+            border-bottom: 1px solid #f6f6f6;
+            cursor: pointer
+        }
+
+        .chat-item:hover {
+            background: #fbfbfb
+        }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #fff;
+            margin-right: 12px
+        }
+
+        .chat-info {
+            flex: 1
+        }
+
+        .chat-info h4 {
+            font-size: 14px;
+            margin-bottom: 4px
+        }
+
+        .chat-info p {
+            font-size: 12px;
+            color: #666
+        }
+
+        /* --- Main header (chat) --- */
+        .chat-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #f7f7f7;
+            border-bottom: 1px solid #eee
+        }
+
+        .chat-header .title {
+            font-weight: 600
+        }
+
+        /* --- Messages area --- */
+        .messages {
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+            background-image: linear-gradient(180deg, rgba(0, 0, 0, 0.01), rgba(0, 0, 0, 0.01));
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .bubble {
+            max-width: 70%;
+            padding: 10px 12px;
+            border-radius: 16px;
+            line-height: 1.35
+        }
+
+        .left {
+            align-self: flex-start;
+            background: #fff;
+            border: 1px solid #eee
+        }
+
+        .right {
+            align-self: flex-end;
+            background: #dcf8c6
+        }
+
+        .meta {
+            font-size: 11px;
+            color: #666;
+            margin-top: 6px
+        }
+
+        /* --- Composer --- */
+        .composer {
+            display: flex;
+            padding: 12px;
+            border-top: 1px solid #eee;
+            gap: 8px;
+            align-items: center
+        }
+
+        .composer input[type=text] {
+            flex: 1;
+            padding: 12px;
+            border-radius: 24px;
+            border: 1px solid #e6e6e6
+        }
+
+        .composer button {
+            padding: 10px 14px;
+            border-radius: 24px;
+            border: none;
+            background: #25D366;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer
+        }
+
+        /* --- Sign-in overlay --- */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .card {
+            background: #fff;
+            padding: 24px;
+            border-radius: 12px;
+            min-width: 320px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12)
+        }
+
+        .card h3 {
+            margin-bottom: 12px
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer
+        }
+
+        .btn.google {
+            background: #fff;
+            border: 1px solid #ddd
+        }
+
+        .small {
+            font-size: 13px;
+            color: #666;
+            margin-top: 8px
+        }
+
+        /* Mobile tweaks */
+        @media (max-width:760px) {
+            .sidebar {
+                width: 100%;
+                height: 200px
+            }
+
+            .app {
+                flex-direction: column
+            }
+
+            .main {
+                height: calc(100vh - 200px)
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="app">
+        <aside class="sidebar">
+            <div class="header">
+                <div class="brand">
+                    <div class="logo">F</div>
+                    <h2>Files</h2>
+                </div>
+                <div id="userPic" style="width:36px;height:36px;border-radius:50%;background:#eee"></div>
+            </div>
+            <div class="search"><input id="searchInput" placeholder="Search or start new chat" /></div>
+            <div class="chats" id="chatsList">
+                <!-- Chat items populated by JS -->
+            </div>
+            <div style="padding:12px;border-top:1px solid #f0f0f0">
+                <button id="signOutBtn" class="btn" style="background:#fff;border:1px solid #ddd">Sign Out</button>
+            </div>
+        </aside>
+
+        <main class="main">
+            <div class="chat-header">
+                <div style="display:flex;align-items:center;gap:12px">
+                    <div class="avatar">G</div>
+                    <div>
+                        <div class="title" id="chatTitle">General</div>
+                        <div class="small" id="chatSubtitle">A public room</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="messages" id="messages"></div>
+
+            <div class="composer">
+                <input type="text" id="messageInput" placeholder="Type a message" />
+                <button id="sendBtn">Send</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Sign in overlay -->
+    <div id="authOverlay" class="overlay" style="display:none">
+        <div class="card">
+            <h3>Sign in to Files</h3>
+            <div style="display:flex;gap:8px;margin-bottom:10px">
+                <input id="email" placeholder="Email"
+                    style="flex:1;padding:10px;border:1px solid #e6e6e6;border-radius:8px" />
+                <input id="password" type="password" placeholder="Password"
+                    style="flex:1;padding:10px;border:1px solid #e6e6e6;border-radius:8px" />
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:6px">
+                <button id="emailSignIn" class="btn" style="background:#25D366;color:#fff">Sign In</button>
+                <button id="emailSignUp" class="btn" style="background:#fff;border:1px solid #ddd">Sign Up</button>
+            </div>
+            <div style="margin-bottom:8px"><button id="googleSignIn" class="btn google">Continue with Google</button>
+            </div>
+            <div class="small">By signing in you agree to use this demo responsibly. Replace the firebaseConfig with
+                your own project credentials.</div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        /*
+          All-in-one demo chat using Firebase Authentication + Firestore.
+          Instructions:
+            1) Create a Firebase project at https://console.firebase.google.com/
+            2) Enable Authentication providers you want (Google, Email/Password).
+            3) Create a Firestore database in test mode (or set rules appropriately).
+            4) Replace the firebaseConfig object below with your project's config.
+            5) Serve this file over a simple static HTTP server (some browsers block indexed DB for file://).
+        */
+
+        // ----- REPLACE with your project's config -----
+        const firebaseConfig = {
+            apiKey: "REPLACE_API_KEY",
+            authDomain: "REPLACE_PROJECT.firebaseapp.com",
+            projectId: "REPLACE_PROJECT",
+            storageBucket: "REPLACE_PROJECT.appspot.com",
+            messagingSenderId: "REPLACE_SENDER_ID",
+            appId: "REPLACE_APP_ID"
+        };
+        // ----------------------------------------------
+
+        // Initialize
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // UI elements
+        const authOverlay = document.getElementById('authOverlay');
+        const emailEl = document.getElementById('email');
+        const pwdEl = document.getElementById('password');
+        const emailSignIn = document.getElementById('emailSignIn');
+        const emailSignUp = document.getElementById('emailSignUp');
+        const googleSignIn = document.getElementById('googleSignIn');
+        const signOutBtn = document.getElementById('signOutBtn');
+        const userPic = document.getElementById('userPic');
+
+        const messagesEl = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const chatsList = document.getElementById('chatsList');
+
+        // We'll use a single public room 'general' for this demo
+        const ROOM_ID = 'general';
+
+        // Auth helpers
+        function showAuth() { authOverlay.style.display = 'flex'; }
+        function hideAuth() { authOverlay.style.display = 'none'; }
+
+        emailSignIn.addEventListener('click', () => {
+            const email = emailEl.value.trim();
+            const pw = pwdEl.value;
+            if (!email || !pw) return alert('Enter email & password');
+            auth.signInWithEmailAndPassword(email, pw).catch(e => alert(e.message));
+        });
+
+        emailSignUp.addEventListener('click', () => {
+            const email = emailEl.value.trim();
+            const pw = pwdEl.value;
+            if (!email || !pw) return alert('Enter email & password');
+            auth.createUserWithEmailAndPassword(email, pw).catch(e => alert(e.message));
+        });
+
+        googleSignIn.addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).catch(e => alert(e.message));
+        });
+
+        signOutBtn.addEventListener('click', () => auth.signOut());
+
+        // Send message
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            const user = auth.currentUser;
+            if (!user) return showAuth();
+            if (!text) return;
+            const msg = {
+                text,
+                uid: user.uid,
+                name: user.displayName || user.email.split('@')[0],
+                ts: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            db.collection('rooms').doc(ROOM_ID).collection('messages').add(msg)
+                .then(() => { messageInput.value = ''; })
+                .catch(e => alert('Send failed: ' + e.message));
+        }
+
+        // Render messages
+        function renderMessage(doc) {
+            const data = doc.data();
+            const user = auth.currentUser;
+            const isMe = user && data.uid === user.uid;
+            const wrap = document.createElement('div');
+            wrap.className = 'bubble ' + (isMe ? 'right' : 'left');
+            wrap.innerHTML = `<div><strong>${escapeHtml(data.name || 'Anon')}</strong></div><div style="margin-top:6px">${escapeHtml(data.text)}</div>`;
+            const meta = document.createElement('div'); meta.className = 'meta';
+            const ts = data.ts && data.ts.toDate ? data.ts.toDate().toLocaleString() : '';
+            meta.textContent = ts;
+            wrap.appendChild(meta);
+            messagesEl.appendChild(wrap);
+            // Auto-scroll
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        // Minimal XSS escape
+        function escapeHtml(s) { if (!s) return ''; return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;'); }
+
+        // Listen to auth state
+        let unsubscribe = null;
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                hideAuth();
+                userPic.style.backgroundImage = user.photoURL ? `url(${user.photoURL})` : '';
+                userPic.textContent = user.displayName ? user.displayName[0].toUpperCase() : (user.email ? user.email[0].toUpperCase() : 'U');
+
+                // Subscribe to messages
+                if (unsubscribe) unsubscribe();
+                const msgsRef = db.collection('rooms').doc(ROOM_ID).collection('messages').orderBy('ts', 'asc');
+                unsubscribe = msgsRef.onSnapshot(snap => {
+                    messagesEl.innerHTML = '';
+                    snap.forEach(doc => renderMessage(doc));
+                }, err => console.error(err));
+
+            } else {
+                // not signed in
+                showAuth();
+                userPic.textContent = '';
+                if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+                messagesEl.innerHTML = '<div style="padding:24px;color:#666">Please sign in to join the chat.</div>';
+            }
+        });
+
+        // Basic chats list (demo)
+        function loadChats() {
+            // For demo: only a public room. You can expand to real rooms/contacts.
+            chatsList.innerHTML = '';
+            const item = document.createElement('div'); item.className = 'chat-item';
+            item.innerHTML = `<div class="avatar">G</div><div class="chat-info"><h4>General</h4><p>Public room</p></div>`;
+            item.addEventListener('click', () => document.getElementById('chatTitle').textContent = 'General');
+            chatsList.appendChild(item);
+        }
+        loadChats();
+
+        // Small helper to keep the page friendly when Firestore returns undefined timestamps
+        // (no-op)
+
+        // Optional: simple search filter
+        document.getElementById('searchInput').addEventListener('input', e => {
+            const q = e.target.value.toLowerCase();
+            Array.from(document.querySelectorAll('.chat-item')).forEach(el => {
+                const text = el.textContent.toLowerCase();
+                el.style.display = text.includes(q) ? 'flex' : 'none';
+            });
+        });
+
+        // ---- Helpful notes ----
+        // This is an MVP that demonstrates: auth, sending, real-time listening.
+        // Production considerations (not implemented here):
+        //  - Security rules for Firestore to prevent spoofing (match uid with auth)
+        //  - Pagination / limiting messages (use startAfter / limit)
+        //  - Rooms / contacts lists, presence, typing indicators
+        //  - File / image uploads (use Storage)
+
+    </script>
+</body>
+
+</html>
